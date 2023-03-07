@@ -1,1 +1,1 @@
-# KoTH_AI
+# AtomicAI
