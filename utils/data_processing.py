@@ -21,7 +21,17 @@ def get_pgn_files(path):
 class Board():
     def __init__(self, board, result):
         self.board = board
-        self.result = result
+        # 1 for win, 0 for draw, -1 for loss
+        # TODO: need to figure out this logic
+        if result == '1-0' and not self.board.turn:
+            self.result = 1
+        elif result == '0-1' and  self.board.turn:
+            self.result = 1
+        elif result == '1/2-1/2':
+            self.result = 0
+        else:
+            self.result = -1
+
         self.board_map = np.zeros((8, 8, 18), dtype=np.uint8)
         self.board_map = self.get_board_map()
 
@@ -57,6 +67,9 @@ class Board():
             ep = chess.square_file(self.board.ep_square)
             self.board_map[:,ep,17] = 1
 
+        # TODO: flip board to always see current player's perspective
+
+
 
         return self.board_map
 
@@ -73,7 +86,7 @@ def get_boards(pgn_files):
             boards.append(Board(board, game.headers['Result']))
             # # save image of board
             # svg = chess.svg.board(board=board)
-            # with open('board' + str(i) + '.svg', 'w+') as f:
+            # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
             #     f.write(svg)
             # i += 1
     return boards
@@ -81,4 +94,4 @@ def get_boards(pgn_files):
 if __name__ == '__main__':
     boards = get_boards(get_pgn_files(PATH))
     print(boards[0].get_board_map()[:,:,0])
-    print(boards[0].result)
+    print(boards[1].result)
