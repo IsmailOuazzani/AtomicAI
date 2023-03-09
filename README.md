@@ -10,3 +10,5 @@ Unzip the dataset:
 ztsd -d (filaname.pgn.zst) -o (filename.pgn)
 ```
 
+The data can be read using utils/data_processing.py
+
