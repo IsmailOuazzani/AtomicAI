@@ -32,7 +32,7 @@ class Board():
         else:
             self.result = -1
 
-        self.board_map = np.zeros((8, 8, 18), dtype=np.uint8)
+        self.board_map = np.zeros((8, 8, 19), dtype=np.uint8)
         self.board_map = self.get_board_map()
 
     def get_board_map(self):
@@ -72,6 +72,8 @@ class Board():
             # self.board_map = np.flip(self.board_map, axis=0)  ## does not work
             # self.board_map = np.flip(self.board_map, axis=1)
             pass
+    
+        self.board_map[:,:,18] = self.result # label to be predicted
 
         return self.board_map
 
@@ -79,6 +81,7 @@ def get_boards(pgn_files):
     boards = []
     for pgn in pgn_files:
 
+        # TODO: handle multiple games in one pgn file
         game = chess.pgn.read_game(pgn)
         board = game.board()
         # boards.append(Board(board)) # uncomment this line to get the board before the first move
@@ -93,7 +96,7 @@ def get_boards(pgn_files):
             # i += 1
     return boards
 
-
+## TODO: save to HDF5 file
 
 if __name__ == '__main__':
     boards = get_boards(get_pgn_files(PATH))
