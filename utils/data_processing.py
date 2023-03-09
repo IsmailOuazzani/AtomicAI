@@ -23,9 +23,9 @@ class Board():
         self.board = board
         # 1 for win, 0 for draw, -1 for loss
         # TODO: need to figure out this logic
-        if result == '1-0' and not self.board.turn:
+        if result == '1-0' and  self.board.turn == chess.WHITE:
             self.result = 1
-        elif result == '0-1' and  self.board.turn:
+        elif result == '0-1' and  self.board.turn == chess.BLACK:
             self.result = 1
         elif result == '1/2-1/2':
             self.result = 0
@@ -68,8 +68,10 @@ class Board():
             self.board_map[:,ep,17] = 1
 
         # TODO: flip board to always see current player's perspective
-
-
+        if self.board.turn == chess.BLACK:
+            # self.board_map = np.flip(self.board_map, axis=0)  ## does not work
+            # self.board_map = np.flip(self.board_map, axis=1)
+            pass
 
         return self.board_map
 
@@ -91,7 +93,9 @@ def get_boards(pgn_files):
             # i += 1
     return boards
 
+
+
 if __name__ == '__main__':
     boards = get_boards(get_pgn_files(PATH))
-    print(boards[0].get_board_map()[:,:,0])
+    print(boards[2].get_board_map()[:,:,0])
     print(boards[1].result)
