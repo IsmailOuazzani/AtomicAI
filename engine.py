@@ -8,6 +8,7 @@ import time
 # TODO: replace eval with NN eval using ONNX
 # TODO: save MCTS tree to do less evaluation
 # TODO: baseline engine blunders hard :c
+# TODO: replace random move selection in simulation with max eval move
 
 
 class Node:
