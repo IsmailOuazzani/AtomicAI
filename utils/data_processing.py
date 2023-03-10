@@ -1,9 +1,7 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
-# TODO: test for multiple games in one pgn file
-# TODO: test for multiple pgn files
-# TODO: only keep games with elo > 1800
+# TODO: make it work with multiple pgn files in dataset folder
 # TODO: save dataset files to HDF5 file
 # TODO: decaying result label
 # TODO: figure out how to flip the board so that its always in the players perspective
@@ -13,6 +11,7 @@ import chess
 import chess.pgn
 import numpy as np
 import os
+import io
 
 # games are located in the dataset folder in the parent directory in the form of pgn files
 PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dataset\\')
@@ -90,23 +89,46 @@ def get_boards(pgn_files):
     boards = []
     for pgn in pgn_files:
 
-        # TODO: handle multiple games in one pgn file
-        game = chess.pgn.read_game(pgn)
-        board = game.board()
-        # boards.append(Board(board)) # uncomment this line to get the board before the first move
-        i = 0
-        for move in game.mainline_moves():
-            board.push(move)
-            boards.append(Board(board, game.headers['Result']))
-            # # save image of board
-            # svg = chess.svg.board(board=board)
-            # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
-            #     f.write(svg)
-            # i += 1
+        # handle multiple games in one pgn file
+        games = []
+        pgn_read = pgn.read()
+        lines = pgn_read.split('\n\n')
+        for i in range(len(lines)//2):
+            games.append(lines[2*i] + '\n\n' + lines[2*i+1] + '\n\n')
+            if i % 10000 == 0:
+                print("formatting game", i)
+
+        print("finished formatting games for file", pgn.name)
+            
+        # for debugging
+        # for cur_game in [games[0]]:
+        counter = 0 
+
+        for cur_game in games:
+            counter += 1
+            if counter % 1000 == 0:
+                print("processing game", counter)
+            game = chess.pgn.read_game(io.StringIO(cur_game))
+            # print(cur_game)
+            if game.headers['Result'] == '1-0' or game.headers['Result'] == '0-1' or game.headers['Result'] == '1/2-1/2':
+                if int(game.headers['WhiteElo']) > 1500:
+                    board = game.board()
+                    i = 0
+                    for move in game.mainline_moves():
+                        try:
+                            board.push(move)
+                            boards.append(Board(board, game.headers['Result']))
+                        except:
+                            print(board)
+                            exit()
+                        # # save image of board, extremely slow!!
+                        # svg = chess.svg.board(board=board)
+                        # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
+                        #     f.write(svg)
+                        i += 1
     return boards
 
 
 if __name__ == '__main__':
     boards = get_boards(get_pgn_files(PATH))
-    print(boards[2].get_board_map()[:,:,0])
-    print(boards[1].result)
+    print(len(boards))
