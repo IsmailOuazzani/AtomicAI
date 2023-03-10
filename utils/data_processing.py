@@ -4,7 +4,6 @@
 # TODO: save dataset files to HDF5 file
 # TODO: decaying result label + elo trust
 
-
 import chess
 import chess.pgn
 import numpy as np
@@ -25,12 +24,6 @@ def get_pgn_files(path):
 
 class Board():
     def __init__(self, board, result):
-        # flip board to always see current player's perspective
-        if board.turn == chess.BLACK:
-            self.board = board.transform(chess.flip_vertical)
-        else:
-            self.board = board
-
         # 1 for win, 0 for draw, -1 for loss, n
         # NOT SURE IF THIS IS THE BEST WAY TO DO THIS
         if result == '1-0' and  self.board.turn == chess.WHITE:
@@ -41,6 +34,13 @@ class Board():
             self.result = 0
         else:
             self.result = -1
+
+        # flip board to always see current player's perspective
+        if board.turn == chess.BLACK: # since we don't care about game history, mirror the board
+            # self.board = board.transform(chess.flip_vertical) ## flips board
+            self.board = board.mirror() ## flips board and colors
+        else:
+            self.board = board
 
         self.board_map = np.zeros((8, 8, 19), dtype=np.uint8)
         self.board_map = self.get_board_map()
@@ -114,7 +114,7 @@ def get_boards(pgn_files):
                         board.push(move)
                         boards.append(Board(board, game.headers['Result']))
                         # save image of board, extremely slow!!
-                        svg = chess.svg.board(board=board)
+                        svg = chess.svg.board(board=boards[-1].board)
                         with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
                             f.write(svg)
                         i += 1
