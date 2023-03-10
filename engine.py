@@ -18,7 +18,7 @@ class Node:
         return self.wins / self.visits + 2 * (2 * self.parent.visits / self.visits) ** 0.5
 
 class MCTSEngine:
-    def __init__(self, time_limit=1.0):
+    def __init__(self, time_limit=15.0):
         self.time_limit = time_limit
 
     def choose_move(self, board):
@@ -48,7 +48,7 @@ class MCTSEngine:
                     result = self.simulate(temp_board)
             while node is not None:
                 node.visits += 1
-                node.wins += result + 0.1 * self.evaluate(temp_board) # Add evaluation score
+                node.wins += result + 0.5 * self.evaluate(temp_board) # Add evaluation score
                 node = node.parent
         best_node = max(root.children, key=lambda child: child.visits)
         return best_node.move
@@ -60,6 +60,9 @@ class MCTSEngine:
             move = random.choice(legal_moves)
             board.push(move)
             if board.is_checkmate():
+                result = 1 if board.turn else -1
+                break
+            if board.is_variant_win():
                 result = 1 if board.turn else -1
                 break
         if result is None:
@@ -78,7 +81,7 @@ class MCTSEngine:
 
 
 engine = MCTSEngine()
-# create board from starter.pgn
+# create board from starter.pgn since i can't figure out how to create a variant board
 board = chess.pgn.read_game(open("starter.pgn")).board()
 
 while not board.is_game_over(claim_draw=True):
