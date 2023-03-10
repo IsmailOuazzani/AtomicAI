@@ -3,7 +3,6 @@
 
 # TODO: save dataset files to HDF5 file
 # TODO: decaying result label + elo trust
-# TODO: figure out how to flip the board so that its always in the players perspective
 
 
 import chess
@@ -26,7 +25,12 @@ def get_pgn_files(path):
 
 class Board():
     def __init__(self, board, result):
-        self.board = board
+        # flip board to always see current player's perspective
+        if board.turn == chess.BLACK:
+            self.board = board.transform(chess.flip_vertical)
+        else:
+            self.board = board
+
         # 1 for win, 0 for draw, -1 for loss, n
         # NOT SURE IF THIS IS THE BEST WAY TO DO THIS
         if result == '1-0' and  self.board.turn == chess.WHITE:
@@ -73,13 +77,6 @@ class Board():
             ep = chess.square_file(self.board.ep_square)
             self.board_map[:,ep,17] = 1
 
-        # TODO: flip board to always see current player's perspective
-        # might be a way to do this using python-chess before all the above code
-        if self.board.turn == chess.BLACK:
-            # self.board_map = np.flip(self.board_map, axis=0)  ## does not work
-            # self.board_map = np.flip(self.board_map, axis=1)
-            pass
-    
         self.board_map[:,:,18] = self.result # label to be predicted
 
         return self.board_map
@@ -114,16 +111,12 @@ def get_boards(pgn_files):
                     board = game.board()
                     i = 0
                     for move in game.mainline_moves():
-                        try:
-                            board.push(move)
-                            boards.append(Board(board, game.headers['Result']))
-                        except:
-                            print(board)
-                            exit()
-                        # # save image of board, extremely slow!!
-                        # svg = chess.svg.board(board=board)
-                        # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
-                        #     f.write(svg)
+                        board.push(move)
+                        boards.append(Board(board, game.headers['Result']))
+                        # save image of board, extremely slow!!
+                        svg = chess.svg.board(board=board)
+                        with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
+                            f.write(svg)
                         i += 1
     return boards
 
@@ -131,3 +124,5 @@ def get_boards(pgn_files):
 if __name__ == '__main__':
     boards = get_boards(get_pgn_files(PATH))
     print(len(boards))
+    print(boards[1].board_map[:,:,0])
+    

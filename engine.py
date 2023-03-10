@@ -69,6 +69,15 @@ class MCTSEngine:
             if board.is_variant_win():
                 result = 1 if board.turn else -1
                 break
+            if board.is_variant_loss():
+                result = -1 if board.turn else 1
+                break
+            if board.is_stalemate():
+                result = 0
+                break
+            if board.is_variant_draw():
+                result = 0
+                break
         if result is None:
             result = 0
         return result
