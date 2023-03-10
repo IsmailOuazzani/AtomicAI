@@ -25,7 +25,7 @@ class Node:
         return self.wins / self.visits + 2 * (2 * self.parent.visits / self.visits) ** 0.5
 
 class MCTSEngine:
-    def __init__(self, time_limit=60.0):
+    def __init__(self, time_limit=30.0):
         self.time_limit = time_limit
 
     def choose_move(self, board):
@@ -64,16 +64,26 @@ class MCTSEngine:
         result = None
         while not board.is_game_over(claim_draw=True):
             legal_moves = list(board.legal_moves)
-            move = random.choice(legal_moves)
+            # move = random.choice(legal_moves)
+
+            # choose move with max eval
+            # sample 50 random moves to reduce computation
+            legal_test_moves = random.sample(legal_moves, min(50, len(legal_moves)))
+            states = [board.copy() for _ in range(len(legal_test_moves))]
+            for i, state in enumerate(states):
+                state.push(legal_test_moves[i])
+            evals = [evaluate(state, 0) for state in states]
+            move = legal_test_moves[evals.index(max(evals))]
+
             board.push(move)
             if board.is_checkmate():
-                result = 1 if board.turn else -1
+                result = 1 if not board.turn else -1
                 break
             if board.is_variant_win():
-                result = 1 if board.turn else -1
+                result = 1 if not board.turn else -1
                 break
             if board.is_variant_loss():
-                result = -1 if board.turn else 1
+                result = -1 if not board.turn else 1
                 break
             if board.is_stalemate():
                 result = 0
