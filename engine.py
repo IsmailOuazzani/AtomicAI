@@ -1,7 +1,5 @@
 import chess
-import chess.engine
 import random
-import numpy as np
 import time
 
 class Node:
@@ -18,7 +16,7 @@ class Node:
         return self.wins / self.visits + 2 * (2 * self.parent.visits / self.visits) ** 0.5
 
 class MCTSEngine:
-    def __init__(self, time_limit=5.0):
+    def __init__(self, time_limit=1.0):
         self.time_limit = time_limit
 
     def choose_move(self, board):
@@ -48,7 +46,7 @@ class MCTSEngine:
                     result = self.simulate(temp_board)
             while node is not None:
                 node.visits += 1
-                node.wins += result
+                node.wins += result + 0.1 * self.evaluate(temp_board) # Add evaluation score
                 node = node.parent
         best_node = max(root.children, key=lambda child: child.visits)
         return best_node.move
@@ -66,6 +64,15 @@ class MCTSEngine:
             result = 0
         return result
 
+    def evaluate(self, board):
+        # material score
+        score = 0
+        for piece in board.piece_map().values():
+            if piece.color:
+                score += piece.piece_type
+            else:
+                score -= piece.piece_type
+        return score / 2*8*2
 
 
 engine = MCTSEngine()
