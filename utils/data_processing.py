@@ -1,9 +1,8 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
-# TODO: make it work with multiple pgn files in dataset folder
 # TODO: save dataset files to HDF5 file
-# TODO: decaying result label
+# TODO: decaying result label + elo trust
 # TODO: figure out how to flip the board so that its always in the players perspective
 
 
