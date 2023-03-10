@@ -1,4 +1,6 @@
 import chess
+import chess.pgn
+
 import random
 import time
 
@@ -76,8 +78,9 @@ class MCTSEngine:
 
 
 engine = MCTSEngine()
+# create board from starter.pgn
+board = chess.pgn.read_game(open("starter.pgn")).board()
 
-board = chess.Board()
 while not board.is_game_over(claim_draw=True):
     if board.turn:
         print(board)
@@ -93,4 +96,4 @@ while not board.is_game_over(claim_draw=True):
         board.push(move)
 
 print(board)
-print("Game over")
+print("Game over", board.result())
