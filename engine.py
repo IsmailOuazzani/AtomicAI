@@ -11,6 +11,10 @@ import time
 # TODO: replace random move selection in simulation with max eval move
 
 
+# TODO: not sure if this is the best way to do this, but can try:
+# 1. kernel functions in input of CNN
+
+
 class Node:
     def __init__(self, parent, move):
         self.parent = parent
@@ -22,10 +26,12 @@ class Node:
     def ucb1(self):
         if self.visits == 0:
             return float("inf")
-        return self.wins / self.visits + 2 * (2 * self.parent.visits / self.visits) ** 0.5
+        exploit = self.wins / self.visits
+        explore_constant = 2.0
+        return exploit + explore_constant * (2 * self.parent.visits / self.visits) ** 0.5
 
 class MCTSEngine:
-    def __init__(self, time_limit=30.0):
+    def __init__(self, time_limit=60.0):
         self.time_limit = time_limit
 
     def choose_move(self, board):
@@ -55,45 +61,45 @@ class MCTSEngine:
                     result = self.simulate(temp_board)
             while node is not None:
                 node.visits += 1
-                node.wins += result + 0.5 * evaluate(temp_board, 0) # Add evaluation score
+                node.wins += result
                 node = node.parent
         best_node = max(root.children, key=lambda child: child.visits)
         return best_node.move, best_node.wins
 
-    def simulate(self, board):
+    def simulate(self, test_board, testall=False):
         result = None
-        while not board.is_game_over(claim_draw=True):
+        board = test_board.copy()
+        while not board.is_game_over():
             legal_moves = list(board.legal_moves)
             # move = random.choice(legal_moves)
 
             # choose move with max eval
-            # sample 50 random moves to reduce computation
-            legal_test_moves = random.sample(legal_moves, min(50, len(legal_moves)))
+            # sample 500 random moves to reduce computation
+            legal_test_moves = random.sample(legal_moves, min(100, len(legal_moves)))
+            if testall:
+                legal_test_moves = legal_moves
             states = [board.copy() for _ in range(len(legal_test_moves))]
             for i, state in enumerate(states):
                 state.push(legal_test_moves[i])
-            evals = [evaluate(state, 0) for state in states]
+            evals = [evaluate(state, not state.turn) for state in states]
             move = legal_test_moves[evals.index(max(evals))]
 
             board.push(move)
-            if board.is_checkmate():
-                result = 1 if not board.turn else -1
-                break
-            if board.is_variant_win():
-                result = 1 if not board.turn else -1
-                break
-            if board.is_variant_loss():
-                result = -1 if not board.turn else 1
-                break
-            if board.is_stalemate():
-                result = 0
-                break
-            if board.is_variant_draw():
-                result = 0
-                break
-        if result is None:
-            result = 0
-        return result
+        # debugging simulation
+        if testall:
+            # save final board as svg
+            board_svg = board._repr_svg_()
+            with open("board_final.svg", "w+") as f:
+                f.write(board_svg)
+            # print("game", board.is_game_over(), board.result())
+
+        # Determine the final result
+        if board.result() == "0-1":
+            return 1
+        elif board.result() == "1-0":
+            return -1
+        else:
+            return 0
 
 def evaluate(board, player):
     # material score
@@ -104,13 +110,39 @@ def evaluate(board, player):
         else:
             score -= piece.piece_type
 
-    # missing king score
-    if not board.king(player):
-        score -= 1000
-    if not board.king(not player):
-        score += 1000
+    if player == 1:
+        enemy = chess.BLACK
+        friend = chess.WHITE
+    else:
+        enemy = chess.WHITE
+        friend = chess.BLACK
+
+    # mobility score
+    score += len(list(board.legal_moves)) / 10
+
+    # king safety score
+    if board.king(enemy) is not None:
+        score += len(board.attackers(enemy, board.king(enemy))) /2
+
+    # friendly pieces closer to enemy king
+    if board.king(enemy) is not None and board.king(player) is not None:
+        for i in range(8):
+            for j in range(8):
+                if board.piece_at(chess.square(i, j)) is not None:
+                    if board.piece_at(chess.square(i, j)).color == friend:
+                        score += 1 / (abs(i - chess.square_file(board.king(enemy))) + abs(j - chess.square_rank(board.king(enemy))))
+                    elif board.piece_at(chess.square(i, j)).color == enemy:
+                        score -= 1 / (abs(i - chess.square_file(board.king(friend))) + abs(j - chess.square_rank(board.king(friend))))
+    
+
+    # exploding king score
+    if board.king(friend) is None:
+        score -= 100
+    if board.king(enemy) is None:
+        score += 100
+
     # normalise score
-    score /= 39
+    score /= 40
     return score 
 
 engine = MCTSEngine()
@@ -132,13 +164,14 @@ while not board.is_game_over(claim_draw=True):
         start_time = time.time()
         move, boardeval = engine.choose_move(board)
         print(f"Time elapsed: {time.time() - start_time:.2f}s")
-        print("Engine eval:", boardeval)
+        # print("Engine eval:", boardeval)
         board.push(move)
     # save as svg
     board_svg = board._repr_svg_()
     with open("board.svg", "w+") as f:
         f.write(board_svg)
-    print("player eval:", evaluate(board, 1))
+    print("engine eval:", evaluate(board, 0))
+    print("engine simulate:", engine.simulate(board.copy(), testall=True))
 
 print(board)
 print("Game over", board.result())

@@ -1,3 +1,6 @@
 dataset/
 utils/trash/
 test.py
+board.svg
+engine2.py
+board_final.svg
