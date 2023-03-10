@@ -19,3 +19,5 @@ The data can be read using utils/data_processing.py
 
 # Engine
 Engine allows user to play against the AI. It uses Monte Carlo Tree Search. For now, the engine  has a dummy evaluation function based on the material of the pieces, and uses random moves for the simulation.
+
+To play, run engine.py and enter the moves using the algebraic notation. You can visualize the game in the board.svg file using your browser (keep refreshing).
