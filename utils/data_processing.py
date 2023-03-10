@@ -1,6 +1,14 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
+# TODO: test for multiple games in one pgn file
+# TODO: test for multiple pgn files
+# TODO: only keep games with elo > 1800
+# TODO: save dataset files to HDF5 file
+# TODO: decaying result label
+# TODO: figure out how to flip the board so that its always in the players perspective
+
+
 import chess
 import chess.pgn
 import numpy as np
@@ -21,8 +29,8 @@ def get_pgn_files(path):
 class Board():
     def __init__(self, board, result):
         self.board = board
-        # 1 for win, 0 for draw, -1 for loss
-        # TODO: need to figure out this logic
+        # 1 for win, 0 for draw, -1 for loss, n
+        # NOT SURE IF THIS IS THE BEST WAY TO DO THIS
         if result == '1-0' and  self.board.turn == chess.WHITE:
             self.result = 1
         elif result == '0-1' and  self.board.turn == chess.BLACK:
@@ -68,6 +76,7 @@ class Board():
             self.board_map[:,ep,17] = 1
 
         # TODO: flip board to always see current player's perspective
+        # might be a way to do this using python-chess before all the above code
         if self.board.turn == chess.BLACK:
             # self.board_map = np.flip(self.board_map, axis=0)  ## does not work
             # self.board_map = np.flip(self.board_map, axis=1)
@@ -96,7 +105,6 @@ def get_boards(pgn_files):
             # i += 1
     return boards
 
-## TODO: save to HDF5 file
 
 if __name__ == '__main__':
     boards = get_boards(get_pgn_files(PATH))

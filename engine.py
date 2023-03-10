@@ -4,6 +4,10 @@ import chess.pgn
 import random
 import time
 
+# TODO: add multithreading for search
+# TODO: replace eval with NN eval using ONNX
+
+
 class Node:
     def __init__(self, parent, move):
         self.parent = parent
