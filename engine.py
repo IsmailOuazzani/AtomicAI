@@ -6,6 +6,8 @@ import time
 
 # TODO: add multithreading for search
 # TODO: replace eval with NN eval using ONNX
+# TODO: save MCTS tree to do less evaluation
+# TODO: baseline engine blunders hard :c
 
 
 class Node:
@@ -22,7 +24,7 @@ class Node:
         return self.wins / self.visits + 2 * (2 * self.parent.visits / self.visits) ** 0.5
 
 class MCTSEngine:
-    def __init__(self, time_limit=15.0):
+    def __init__(self, time_limit=60.0):
         self.time_limit = time_limit
 
     def choose_move(self, board):
@@ -87,10 +89,18 @@ def evaluate(board, player):
     score = 0
     for piece in board.piece_map().values():
         if piece.color == player:
-            score += piece.piece_type ** 2
+            score += piece.piece_type
         else:
-            score -= piece.piece_type ** 2
-    return score
+            score -= piece.piece_type
+
+    # missing king score
+    if not board.king(player):
+        score -= 1000
+    if not board.king(not player):
+        score += 1000
+    # normalise score
+    score /= 39
+    return score 
 
 engine = MCTSEngine()
 # create board from starter.pgn since i can't figure out how to create a variant board
