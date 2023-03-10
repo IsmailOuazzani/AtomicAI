@@ -52,7 +52,7 @@ class MCTSEngine:
                     result = self.simulate(temp_board)
             while node is not None:
                 node.visits += 1
-                node.wins += result + 0.5 * self.evaluate(temp_board) # Add evaluation score
+                node.wins += result + 0.5 * evaluate(temp_board, 0) # Add evaluation score
                 node = node.parent
         best_node = max(root.children, key=lambda child: child.visits)
         return best_node.move
@@ -82,26 +82,28 @@ class MCTSEngine:
             result = 0
         return result
 
-    def evaluate(self, board):
-        # material score
-        score = 0
-        for piece in board.piece_map().values():
-            if piece.color:
-                score += piece.piece_type
-            else:
-                score -= piece.piece_type
-        return score / 2*8*2
-
+def evaluate(board, player):
+    # material score
+    score = 0
+    for piece in board.piece_map().values():
+        if piece.color == player:
+            score += piece.piece_type ** 2
+        else:
+            score -= piece.piece_type ** 2
+    return score
 
 engine = MCTSEngine()
 # create board from starter.pgn since i can't figure out how to create a variant board
 board = chess.pgn.read_game(open("starter.pgn")).board()
-
 while not board.is_game_over(claim_draw=True):
     if board.turn:
         print(board)
         print("Your turn")
         move = input("Enter your move (e.g. e2e4): ")
+        # check if move is legal
+        while move not in [move.uci() for move in board.legal_moves]:
+            print("Illegal move")
+            move = input("Enter your move (e.g. e2e4): ")
         board.push_san(move)
     else:
         print(board)
@@ -110,10 +112,11 @@ while not board.is_game_over(claim_draw=True):
         move = engine.choose_move(board)
         print(f"Time elapsed: {time.time() - start_time:.2f}s")
         board.push(move)
-        # save as svg
-        board_svg = board._repr_svg_()
-        with open("board.svg", "w+") as f:
-            f.write(board_svg)
+    # save as svg
+    board_svg = board._repr_svg_()
+    with open("board.svg", "w+") as f:
+        f.write(board_svg)
+    print("player eval:", evaluate(board, 1))
 
 print(board)
 print("Game over", board.result())
