@@ -3,6 +3,8 @@
 
 # TODO: save dataset files to HDF5 file
 # TODO: decaying result label + elo trust
+# TODO: remove plane 12 in board representation
+# TODO: test castling and en passant in board representation
 
 import chess
 import chess.pgn
@@ -26,9 +28,9 @@ class Board():
     def __init__(self, board, result):
         # 1 for win, 0 for draw, -1 for loss, n
         # NOT SURE IF THIS IS THE BEST WAY TO DO THIS
-        if result == '1-0' and  self.board.turn == chess.WHITE:
+        if result == '1-0' and  board.turn == chess.WHITE:
             self.result = 1
-        elif result == '0-1' and  self.board.turn == chess.BLACK:
+        elif result == '0-1' and  board.turn == chess.BLACK:
             self.result = 1
         elif result == '1/2-1/2':
             self.result = 0
@@ -55,10 +57,6 @@ class Board():
                         self.board_map[i,j,piece.piece_type-1] = 1
                     else:
                         self.board_map[i,j,piece.piece_type + 5] = 1
-        # color
-        if self.board.turn:
-            self.board_map[:,:,12] = 1
-
 
         """
         Have not tested the following code yet
@@ -113,11 +111,11 @@ def get_boards(pgn_files):
                     for move in game.mainline_moves():
                         board.push(move)
                         boards.append(Board(board, game.headers['Result']))
-                        # save image of board, extremely slow!!
-                        svg = chess.svg.board(board=boards[-1].board)
-                        with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
-                            f.write(svg)
-                        i += 1
+                        # # save image of board, extremely slow!!
+                        # svg = chess.svg.board(board=boards[-1].board)
+                        # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
+                        #     f.write(svg)
+                        # i += 1
     return boards
 
 

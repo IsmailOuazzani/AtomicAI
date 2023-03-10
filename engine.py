@@ -110,10 +110,10 @@ while not board.is_game_over(claim_draw=True):
         move = engine.choose_move(board)
         print(f"Time elapsed: {time.time() - start_time:.2f}s")
         board.push(move)
-        # # save as svg
-        # board_svg = board._repr_svg_()
-        # with open("board.svg", "w+") as f:
-        #     f.write(board_svg)
+        # save as svg
+        board_svg = board._repr_svg_()
+        with open("board.svg", "w+") as f:
+            f.write(board_svg)
 
 print(board)
 print("Game over", board.result())
