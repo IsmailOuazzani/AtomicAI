@@ -58,7 +58,7 @@ class MCTSEngine:
                 node.wins += result + 0.5 * evaluate(temp_board, 0) # Add evaluation score
                 node = node.parent
         best_node = max(root.children, key=lambda child: child.visits)
-        return best_node.move
+        return best_node.move, best_node.wins
 
     def simulate(self, board):
         result = None
@@ -130,8 +130,9 @@ while not board.is_game_over(claim_draw=True):
         print(board)
         print("Engine thinking...")
         start_time = time.time()
-        move = engine.choose_move(board)
+        move, boardeval = engine.choose_move(board)
         print(f"Time elapsed: {time.time() - start_time:.2f}s")
+        print("Engine eval:", boardeval)
         board.push(move)
     # save as svg
     board_svg = board._repr_svg_()
