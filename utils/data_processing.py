@@ -1,9 +1,9 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
-# TODO: decaying result label + elo trust
-# TODO: test castling and en passant in board representation
 # TODO: fix illegal moves bug --> probably happens because not all gaames have all headers
+# TODO: test castling and en passant in board representation
+# TODO: decaying result label + elo trust
 
 import chess
 import chess.pgn
