@@ -1,10 +1,9 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
-# TODO: save dataset files to HDF5 file
 # TODO: decaying result label + elo trust
-# TODO: remove plane 12 in board representation
 # TODO: test castling and en passant in board representation
+# TODO: fix illegal moves bug --> probably happens because not all gaames have all headers
 
 import chess
 import chess.pgn
