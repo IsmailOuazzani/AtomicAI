@@ -76,7 +76,7 @@ class Board():
 
         self.board_map[:,:,17] = self.result # label to be predicted
 
-        return self.board_map
+        return self.board_map.transpose((2,0,1))
 
 def get_boards(pgn_files):
     boards = []
@@ -140,5 +140,5 @@ def get_boards(pgn_files):
 if __name__ == '__main__':
     boards, dat = get_boards(get_pgn_files(PATH))
     print( dat)
-    # print(boards[0].board_map[:,:,17])
+    print(boards[0].board_map[0,:,:])
     
