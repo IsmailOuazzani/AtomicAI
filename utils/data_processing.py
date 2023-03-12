@@ -11,7 +11,7 @@ import os
 import io
 import sys
 
-GAME_PER_FILE = 10000
+GAME_PER_FILE = 1000 # 10 000 is too slow
 
 # games are located in the dataset folder in the parent directory in the form of pgn files
 PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dataset\\')
@@ -150,7 +150,8 @@ def get_boards(pgn_files):
     # temp_boards = [board.board_map for board in boards]
     # np.save(PATH + str(file_counter*GAME_PER_FILE) + '.npy', temp_boards)
     # return boards, data_counter
-
+            if data_counter > 100000:
+                return boards, data_counter
 
 if __name__ == '__main__':
     boards, dat = get_boards(get_pgn_files(PATH))
