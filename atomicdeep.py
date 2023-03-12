@@ -13,6 +13,8 @@ from torch.optim import SGD, Adam
 from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 import time
+import torch.nn.functional as F
+
 
 GAME_PER_FILE = 1000
 DATAPOINTS = 50000
@@ -195,12 +197,13 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     np.savetxt("{}_val_err.csv".format(model_path), val_err)
     np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
 
-import torch.nn.functional as F
 
 class ChessNet(nn.Module):
     def __init__(self):
         super().__init__()
         
+        self.name = "ChessNet"
+
         # 3D Convolution layers
         self.conv1 = nn.Conv3d(1, 16, kernel_size=(17, 7, 7), padding=0)
         self.bn1 = nn.BatchNorm3d(16)
@@ -237,6 +240,10 @@ class ChessNet(nn.Module):
         x = torch.Tanh(self.fc2(x))
         
         return x
+
+neuralnet = ChessNet()
+batch_size = 100
+
 
 for param in neuralnet.parameters():
     print(param.shape)
