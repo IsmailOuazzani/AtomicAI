@@ -1,7 +1,6 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
-# TODO: fix illegal moves bug --> probably happens because not all gaames have all headers
 # TODO: test castling and en passant in board representation
 # TODO: decaying result label + elo trust
 
@@ -10,6 +9,9 @@ import chess.pgn
 import numpy as np
 import os
 import io
+import sys
+
+GAME_PER_FILE = 10000
 
 # games are located in the dataset folder in the parent directory in the form of pgn files
 PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dataset\\')
@@ -83,14 +85,16 @@ def get_boards(pgn_files):
     data_counter = 0
     file_counter = 0
     for pgn in pgn_files:
-
         # handle multiple games in one pgn file
         games = []
         pgn_read = pgn.read()
-        lines = pgn_read.split('\n\n')
+        # replace \n\n\n with \n\n
+        pgn_clean = pgn_read.replace('\n\n\n', '\n\n')
+        pgn_clean = pgn_clean.replace('\n\n\n\n', '\n\n')
+        lines = pgn_clean.split('\n\n')
         for i in range(len(lines)//2):
             games.append(lines[2*i] + '\n\n' + lines[2*i+1] + '\n\n')
-            if i % 10000 == 0:
+            if i % GAME_PER_FILE == 0:
                 print("formatting game", i)
 
         print("finished formatting games for file", pgn.name)
@@ -103,14 +107,28 @@ def get_boards(pgn_files):
             counter += 1
             if counter % 1000 == 0:
                 print("processing game", counter)
+
+            # # check if game is valid
+            # error_buffer = io.StringIO()
+            # sys.stderr = error_buffer
             game = chess.pgn.read_game(io.StringIO(cur_game))
-            # print(cur_game)
+            # sys.stderr = sys.__stderr__
+            # error_message = error_buffer.getvalue().strip()
+            # if error_message:
+            #     print(cur_game)
+            #     exit()
+
+
             if game.headers['Result'] == '1-0' or game.headers['Result'] == '0-1' or game.headers['Result'] == '1/2-1/2':
                 #  check if white player is rated
                 if 'WhiteElo' in game.headers and int(game.headers['WhiteElo']) > 1500:
                     board = game.board()
                     i = 0
                     for move in game.mainline_moves():
+                        if not board.is_legal(move):
+                            print(game.headers['Site'], move, board.is_legal(move), board.is_game_over())
+                            exit()
+                        
                         board.push(move)
                         boards.append(Board(board, game.headers['Result']))
                         data_counter += 1
@@ -119,22 +137,19 @@ def get_boards(pgn_files):
                         # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
                         #     f.write(svg)
                         # i += 1
-            while(len(boards) > 1000):
+            while(len(boards) > GAME_PER_FILE):
                 # pop off the first 100 boards
-                temp_boards = [board.board_map for board in boards[:1000]]
-                boards = boards[1000:]
+                temp_boards = [board.board_map for board in boards[:GAME_PER_FILE]]
+                boards = boards[GAME_PER_FILE:]
 
                 # save the first 100 boards to a file
-                np.save(PATH + str(file_counter*1000) + '.npy', temp_boards)
+                np.save(PATH + str(file_counter*GAME_PER_FILE) + '.npy', temp_boards)
                 file_counter += 1
             
-            # only save the first 20 000 games
-            if data_counter == 19999:
-                break
-    # pop off the first 1000 boards
-    temp_boards = [board.board_map for board in boards]
-    np.save(PATH + str(file_counter*1000) + '.npy', temp_boards)
-    return boards, data_counter
+    # # pop off the last <GAME_PER_FILE boards
+    # temp_boards = [board.board_map for board in boards]
+    # np.save(PATH + str(file_counter*GAME_PER_FILE) + '.npy', temp_boards)
+    # return boards, data_counter
 
 
 if __name__ == '__main__':
