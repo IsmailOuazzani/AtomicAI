@@ -33,7 +33,7 @@ The model is currently able to overfit on a small part of the dataset(3000 board
 
 Latest test: ran on 500 000 boards from games where both players had elo greater than 1500, with 1000 games per file, batch size 500, learning rate 0.01 and on 7 epochs. It took 4289 seconds, or 71.5 minutes to run the entire atomicdeep.py code.
 
-| ![err](model_error.png) | ![loss](model_loss.png) | ![acc](model_accuracy.png) |
+| ![err](model_error.png) | ![loss](model_loss.png) | ![acc](model_acc.png) |
 |-----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
 <div id="b" align="center">
 <h5>Metrics of latest test</h5>
