@@ -15,12 +15,15 @@ import numpy as np
 import time
 import torch.nn.functional as F
 import os
+import logging
+logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s', level=logging.NOTSET)
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+logging.info(f"Using device {device}")
 
 GAME_PER_FILE = 1000
-DATAPOINTS = 3000
+DATAPOINTS = 500000
 
 
 class ChessDataset(Dataset):
@@ -57,10 +60,10 @@ def get_data_loader(batch_size):
   )
 
   train_loader = DataLoader(
-      train_dataset, batch_size= batch_size, shuffle=True
+      train_dataset, batch_size= batch_size, shuffle=True, num_workers=2
   )
   valid_loader = DataLoader(
-      valid_dataset, batch_size = batch_size, shuffle=True
+      valid_dataset, batch_size = batch_size, shuffle=True, num_workers=2
   )
   test_loader = DataLoader(
       test_dataset, batch_size = batch_size,  shuffle=True
@@ -197,7 +200,9 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     torch.manual_seed(1000)
     ########################################################################
     # Obtain the PyTorch data loader objects to load batches of the datasets
+    logging.info("Loading data...")
     train_loader, val_loader, test_loader = get_data_loader(batch_size)
+    logging.info("Done loading data")
     ########################################################################
     criterion = nn.MSELoss()
     # optimizer = SGD(net.parameters(), lr=learning_rate, momentum=0.9)
@@ -217,7 +222,7 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     train_acc[epoch] = accuracy(net, train_loader)
     val_err[epoch], val_loss[epoch] = eval(net, val_loader, criterion)
     val_acc[epoch] = accuracy(net, val_loader)
-    print(("Before training, Epoch {}: Train err: {}, Train loss: {}, Train acc: {} |"+
+    logging.info(("Before training, Epoch {}: Train err: {}, Train loss: {}, Train acc: {} \n"+
             "Validation err: {}, Valid loss: {}, Validation acc: {}").format(
                 epoch,
                 train_err[epoch],
@@ -232,7 +237,7 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     # Loop over the data iterator and sample a new batch of training data
     # Get the output from the network, and optimize our loss function.
     start_time = time.time()
-    print('start training')
+    logging.info("Starting training...")
     for it in range(num_epochs - 1):  # loop over the dataset multiple times
         epoch = it + 1
         total_train_loss = 0.0
@@ -258,7 +263,7 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
         train_acc[epoch] = accuracy(net, train_loader)
         val_err[epoch], val_loss[epoch] = eval(net, val_loader, criterion)
         val_acc[epoch] = accuracy(net, val_loader)
-        print(("Epoch {}: Train err: {}, Train loss: {}, Train acc: {} |"+
+        logging.info(("Epoch {}: Train err: {}, Train loss: {}, Train acc: {} \n"+
                "Validation err: {}, Valid loss: {}, Validation acc: {}").format(
                    epoch + 1,
                    train_err[epoch],
@@ -270,7 +275,7 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
         # Save the current model (checkpoint) to a file
         model_path = get_model_name(net.name, batch_size, learning_rate, epoch)
         torch.save(net.state_dict(), model_path)
-    print('Finished Training')
+    logging.info('Finished Training')
     end_time = time.time()
     elapsed_time = end_time - start_time
     print("Total time elapsed: {:.2f} seconds".format(elapsed_time))
@@ -308,12 +313,15 @@ class ChessNet(nn.Module):
         # removed tanh because it was saturating, so the model could not learn
         return x
 
-
+ 
 neuralnet = ChessNet()
 neuralnet.to(device)
-batch_size = 100
+## good parameters: batch_size = 100, learning_rate = 0.01, num_epochs = 20
+batch_size = 500
 learning_rate = 0.01
-num_epochs = 20
+num_epochs = 7
+
+
 
 # print number of trainable parameters
 pytorch_total_params = sum(p.numel() for p in neuralnet.parameters() if p.requires_grad)
