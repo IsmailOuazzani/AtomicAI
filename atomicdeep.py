@@ -16,11 +16,16 @@ import time
 import torch.nn.functional as F
 import os
 import logging
+import multiprocessing
+
+
 logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s', level=logging.NOTSET)
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logging.info(f"Using device {device}")
+
+
 
 GAME_PER_FILE = 1000
 DATAPOINTS = 500000
@@ -59,11 +64,13 @@ def get_data_loader(batch_size):
       dataset, [train_size, valid_size, test_size]
   )
 
+  # figure out the num workers for the data loader
+
   train_loader = DataLoader(
-      train_dataset, batch_size= batch_size, shuffle=True, num_workers=2
+      train_dataset, batch_size= batch_size, shuffle=True
   )
   valid_loader = DataLoader(
-      valid_dataset, batch_size = batch_size, shuffle=True, num_workers=2
+      valid_dataset, batch_size = batch_size, shuffle=True
   )
   test_loader = DataLoader(
       test_dataset, batch_size = batch_size,  shuffle=True
@@ -85,31 +92,6 @@ def get_model_name(name, batch_size, learning_rate, epoch):
                                                    epoch)
     return path
 
-def evaluate(net, loader, criterion):
-    """ Evaluate the network on the validation set.
-
-     Args:
-         net: PyTorch neural network object
-         loader: PyTorch data loader for the validation set
-         criterion: The loss function
-     Returns:
-         err: A scalar for the avg classification error over the validation set
-         loss: A scalar for the average loss function over the validation set
-     """
-    total_loss = 0.0
-    total_err = 0.0
-    total_epoch = 0
-    for i, data in enumerate(loader, 0):
-        inputs, labels = data
-        outputs = net(inputs)
-        loss = criterion(outputs, labels)
-        corr = (outputs > 0.0).squeeze().long() != labels
-        total_err += int(corr.sum())
-        total_loss += loss.item()
-        total_epoch += len(labels)
-    err = float(total_err) / total_epoch
-    loss = float(total_loss) / (i + 1)
-    return err, loss
 def plot_training_curve(path):
     """ Plots the training curve for a model run, given the csv files
     containing the train/validation error/loss.
@@ -313,23 +295,25 @@ class ChessNet(nn.Module):
         # removed tanh because it was saturating, so the model could not learn
         return x
 
- 
-neuralnet = ChessNet()
-neuralnet.to(device)
-## good parameters: batch_size = 100, learning_rate = 0.01, num_epochs = 20
-batch_size = 500
-learning_rate = 0.01
-num_epochs = 7
+
+if __name__ == "__main__":
+    # multiprocessing.freeze_support()
+    neuralnet = ChessNet()
+    neuralnet.to(device)
+    ## good parameters: batch_size = 100, learning_rate = 0.01, num_epochs = 20
+    batch_size = 500
+    learning_rate = 0.01
+    num_epochs = 7
 
 
 
-# print number of trainable parameters
-pytorch_total_params = sum(p.numel() for p in neuralnet.parameters() if p.requires_grad)
-print("Number of trainable parameters: {}".format(pytorch_total_params))
+    # print number of trainable parameters
+    pytorch_total_params = sum(p.numel() for p in neuralnet.parameters() if p.requires_grad)
+    print("Number of trainable parameters: {}".format(pytorch_total_params))
 
-train_net(neuralnet, num_epochs = num_epochs, batch_size = batch_size, learning_rate = learning_rate)
+    train_net(neuralnet, num_epochs = num_epochs, batch_size = batch_size, learning_rate = learning_rate)
 
-small_model_path = get_model_name(neuralnet.name, batch_size=batch_size, learning_rate=learning_rate, epoch=num_epochs)
-plot_training_curve(small_model_path)
+    small_model_path = get_model_name(neuralnet.name, batch_size=batch_size, learning_rate=learning_rate, epoch=num_epochs)
+    plot_training_curve(small_model_path)
 
-#!rm -rf /content/*
+    #!rm -rf /content/*
