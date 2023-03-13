@@ -305,6 +305,7 @@ class ChessNet(nn.Module):
         x = self.fc1(x)
         x = nn.functional.relu(x)
         x = self.fc2(x)
+        # removed tanh because it was saturating, so the model could not learn
         return x
 
 
