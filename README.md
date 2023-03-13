@@ -53,6 +53,7 @@ Install PyTorch from: https://pytorch.org/get-started/locally/ (don't forget to 
 - Try using larger batch size to fully use the GPU
 - Try using num_workers != 1 for the data loading
 - Use PyTorch's profiling option to see how the resources are used
+- Try to run training on SSD instead of HDD
 
 ## Current issues:
 - Getting the error, loss, accuracy on both validation and training takes more time than training itself. We can probably get the metrics for the training set inside of the training loop.
