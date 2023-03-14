@@ -19,16 +19,9 @@ import logging
 import multiprocessing
 
 
-logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s', level=logging.NOTSET)
 
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logging.info(f"Using device {device}")
-
-
-
-GAME_PER_FILE = 1000
-DATAPOINTS = 500000
+GAME_PER_FILE = 5000
+DATAPOINTS = 1000000
 
 
 class ChessDataset(Dataset):
@@ -48,10 +41,6 @@ class ChessDataset(Dataset):
 
 
 
-ds = ChessDataset()
-ds.__getitem__(10000)[1]
-print('label_data: ', ds.__getitem__(10000)[1])
-
 def get_data_loader(batch_size):
   dataset = ChessDataset()
   total_size = len(dataset)
@@ -67,10 +56,10 @@ def get_data_loader(batch_size):
   # figure out the num workers for the data loader
 
   train_loader = DataLoader(
-      train_dataset, batch_size= batch_size, shuffle=True
+      train_dataset, batch_size= batch_size, shuffle=True, num_workers=4
   )
   valid_loader = DataLoader(
-      valid_dataset, batch_size = batch_size, shuffle=True
+      valid_dataset, batch_size = batch_size, shuffle=True, num_workers=4
   )
   test_loader = DataLoader(
       test_dataset, batch_size = batch_size,  shuffle=True
@@ -144,6 +133,8 @@ def eval(model, dataloader, criterion):
     model.eval()
     total_loss = 0
     total_error = 0
+    correct = 0
+    total = 0
     with torch.no_grad():
         for data, target in dataloader:
             data, target = data.to(device), target.to(device)
@@ -152,26 +143,16 @@ def eval(model, dataloader, criterion):
             total_loss += loss.item() * data.size(0)
             error = torch.abs(output - target).sum()
             total_error += error.item()
+            predicted = torch.sign(output)
+            correct += (predicted == target).sum().item()
+            total += target.size(0)
     n_samples = len(dataloader.dataset)
     avg_loss = total_loss / n_samples
     avg_error = total_error / n_samples
+    avg_accuracy = correct / total
     model.train()
-    return avg_loss, avg_error
+    return avg_loss, avg_error, avg_accuracy
 
-def accuracy(net, loader):
-    correct = 0
-    total = 0
-    net.eval()
-    with torch.no_grad():
-        for inputs, labels in loader:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            outputs = net(inputs)
-            predicted = torch.sign(outputs)
-            correct += (predicted == labels).sum().item()
-            total += labels.size(0)
-    net.train()
-    return correct / total
 
 
 
@@ -200,10 +181,11 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     val_acc = np.zeros(num_epochs)
 
     epoch = 0
-    train_err[epoch], train_loss[epoch] = eval(net, train_loader, criterion)
-    train_acc[epoch] = accuracy(net, train_loader)
-    val_err[epoch], val_loss[epoch] = eval(net, val_loader, criterion)
-    val_acc[epoch] = accuracy(net, val_loader)
+    print('neural net device', next(net.parameters()).device)
+    train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion)
+    val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion)
+    
+    print('neural net device', next(net.parameters()).device)
     logging.info(("Before training, Epoch {}: Train err: {}, Train loss: {}, Train acc: {} \n"+
             "Validation err: {}, Valid loss: {}, Validation acc: {}").format(
                 epoch,
@@ -241,10 +223,8 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
             loss.backward()
             optimizer.step()    
        
-        train_err[epoch], train_loss[epoch] = eval(net, train_loader, criterion)
-        train_acc[epoch] = accuracy(net, train_loader)
-        val_err[epoch], val_loss[epoch] = eval(net, val_loader, criterion)
-        val_acc[epoch] = accuracy(net, val_loader)
+        train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion)
+        val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion)
         logging.info(("Epoch {}: Train err: {}, Train loss: {}, Train acc: {} \n"+
                "Validation err: {}, Valid loss: {}, Validation acc: {}").format(
                    epoch + 1,
@@ -270,41 +250,87 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     np.savetxt("{}_val_err.csv".format(model_path), val_err)
     np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
 
-class ChessNet(nn.Module):
+# class ChessNet(nn.Module):
+#     def __init__(self):
+#         super(ChessNet, self).__init__()
+#         self.name = "ChessNet"
+#         self.conv1 = nn.Conv2d(in_channels=17, out_channels=32, kernel_size=3, padding=1)
+#         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+#         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
+#         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+#         self.fc1 = nn.Linear(in_features=64 * 2 * 2, out_features=256)
+#         self.fc2 = nn.Linear(in_features=256, out_features=1)
+        
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         x = nn.functional.relu(x)
+#         x = self.pool1(x)
+#         x = self.conv2(x)
+#         x = nn.functional.relu(x)
+#         x = self.pool2(x)
+#         x = x.view(-1, 64 * 2 * 2)
+#         x = self.fc1(x)
+#         x = nn.functional.relu(x)
+#         x = self.fc2(x)
+#         # removed tanh because it was saturating, so the model could not learn
+#         return x
+
+import torch.nn.functional as F
+class ChessNet2(nn.Module):
     def __init__(self):
-        super(ChessNet, self).__init__()
-        self.name = "ChessNet"
-        self.conv1 = nn.Conv2d(in_channels=17, out_channels=32, kernel_size=3, padding=1)
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)
-        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(in_features=64 * 2 * 2, out_features=256)
-        self.fc2 = nn.Linear(in_features=256, out_features=1)
+        super(ChessNet2, self).__init__()
+        self.name = "ChessNet2"
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(in_channels=17, out_channels=32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=1)
+        )
+        
+        self.fc_layers = nn.Sequential(
+            nn.Linear(in_features=256 * 2 * 2, out_features=512),
+            nn.ReLU(),
+            nn.Dropout(p=0.5),
+            nn.Linear(in_features=512, out_features=128),
+            nn.ReLU(),
+            nn.Linear(in_features=128, out_features=1)
+        )
         
     def forward(self, x):
-        x = self.conv1(x)
-        x = nn.functional.relu(x)
-        x = self.pool1(x)
-        x = self.conv2(x)
-        x = nn.functional.relu(x)
-        x = self.pool2(x)
-        x = x.view(-1, 64 * 2 * 2)
-        x = self.fc1(x)
-        x = nn.functional.relu(x)
-        x = self.fc2(x)
-        # removed tanh because it was saturating, so the model could not learn
+        x = self.conv_layers(x)
+        x = x.view(-1, 256 * 2 * 2)
+        x = self.fc_layers(x)
         return x
 
 
+
 if __name__ == "__main__":
+
+    logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s', level=logging.NOTSET)
+
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.info(f"Using device {device}")
+
+    ds = ChessDataset()
+    ds.__getitem__(10000)[1]
+    print('label_data: ', ds.__getitem__(10000)[1])
+
     # multiprocessing.freeze_support()
-    neuralnet = ChessNet()
+    neuralnet = ChessNet2()
     neuralnet.to(device)
     ## good parameters: batch_size = 100, learning_rate = 0.01, num_epochs = 20
-    batch_size = 500
+    batch_size = 1000
     learning_rate = 0.01
-    num_epochs = 7
-
+    num_epochs = 25
 
 
     # print number of trainable parameters
@@ -315,5 +341,9 @@ if __name__ == "__main__":
 
     small_model_path = get_model_name(neuralnet.name, batch_size=batch_size, learning_rate=learning_rate, epoch=num_epochs)
     plot_training_curve(small_model_path)
+
+    sample_in = (ds.__getitem__(0)[0]).unsqueeze(0).to(device)
+    sample_out = neuralnet(sample_in)
+    print(sample_out, ds.__getitem__(0)[1])
 
     #!rm -rf /content/*

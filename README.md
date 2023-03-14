@@ -31,7 +31,7 @@ We are using the evaluation function on atomicdeep.py to evaluate the board from
 
 The model is currently able to overfit on a small part of the dataset(3000 boards), but not on larger datasets (100 000 boards). Therefore we need a more complex neural net.
 
-Latest test: ran on 500 000 boards from games where both players had elo greater than 1500, with 1000 games per file, batch size 500, learning rate 0.01 and on 7 epochs. It took 4289 seconds, or 71.5 minutes to run the entire atomicdeep.py code.
+Latest test: ran on 1 000 000 boards from games where both players had elo greater than 1500, with 5000 games per file, batch size 1000, learning rate 0.01 and on 20 epochs. It took about 1h40mins to run the entire atomicdeep.py code.
 
 | ![err](model_error.png) | ![loss](model_loss.png) | ![acc](model_acc.png) |
 |-----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
@@ -50,14 +50,12 @@ Install PyTorch from: https://pytorch.org/get-started/locally/ (don't forget to 
 ## Ideas:
 - Use 3D convolutions to capture the relationships between pieces
 - Experiment with both 3x3 and 7x7 convolutions in the first layer to capture piece surroundings and long range relationships
-- Try using larger batch size to fully use the GPU
-- Try using num_workers != 1 for the data loading
 - Use PyTorch's profiling option to see how the resources are used
 - Try to run training on SSD instead of HDD
 
 ## Current issues:
 - Getting the error, loss, accuracy on both validation and training takes more time than training itself. We can probably get the metrics for the training set inside of the training loop.
-- Hardware use. Currently, during the training phase, only up to 3% of my GPU (nvidia gtx 1070) is used. Need to find a way to juice as much performance as possible out of it. There probably is a bottle neck somewhere in the code. My first assumption would be the data loading, but my disk isn't used too much during training (remains around 2.4 MB/s). For some reason my CPU is used a lot.
+- Hardware use. Currently, during the training phase, only up to 3% of my GPU (nvidia gtx 1070) is used. Need to find a way to juice as much performance as possible out of it. There probably is a bottle neck somewhere in the code. Need better CPU or faster way of loading data into GPU.
 
 
 
