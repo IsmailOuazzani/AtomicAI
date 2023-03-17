@@ -14,6 +14,7 @@ import sys
 GAME_PER_FILE = 5000 # 10 000 is too slow
 
 # games are located in the dataset folder in the parent directory in the form of pgn files
+# games need to be uncompressed first (see README.md)
 PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dataset\\')
 
 # read pgns
@@ -78,9 +79,11 @@ class Board():
 
         self.board_map[:,:,17] = self.result # label to be predicted
 
+        # flip board to always put the current player as white
         return self.board_map.transpose((2,0,1))
 
 def get_boards(pgn_files):
+    # get the board from all the files, given a maximum number of boards and an elo threshold
     boards = []
     data_counter = 0
     file_counter = 0
@@ -99,8 +102,6 @@ def get_boards(pgn_files):
 
         print("finished formatting games for file", pgn.name)
             
-        # for debugging
-        # for cur_game in [games[0]]:
         counter = 0 
 
         for cur_game in games:
@@ -108,7 +109,6 @@ def get_boards(pgn_files):
             if counter % 1000 == 0:
                 print("processing game", counter)
 
-            # # check if game is valid
             # error_buffer = io.StringIO()
             # sys.stderr = error_buffer
             game = chess.pgn.read_game(io.StringIO(cur_game))
@@ -118,7 +118,7 @@ def get_boards(pgn_files):
             #     print(cur_game)
             #     exit()
 
-
+            # game.headers have all sorts of information.
             if game.headers['Result'] == '1-0' or game.headers['Result'] == '0-1' or game.headers['Result'] == '1/2-1/2':
                 #  check if white player is rated
                 if 'WhiteElo' in game.headers and 'BlackElo' in game.headers and int(game.headers['WhiteElo']) > 2000 and int(game.headers['BlackElo']) > 2000:
@@ -147,10 +147,7 @@ def get_boards(pgn_files):
                 print("saved", file_counter*GAME_PER_FILE, "games")
                 file_counter += 1
             
-    # # pop off the last <GAME_PER_FILE boards
-    # temp_boards = [board.board_map for board in boards]
-    # np.save(PATH + str(file_counter*GAME_PER_FILE) + '.npy', temp_boards)
-    # return boards, data_counter
+
             if file_counter * GAME_PER_FILE > 1000000:
                 return boards, file_counter * GAME_PER_FILE
             
