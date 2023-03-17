@@ -11,7 +11,7 @@ import os
 import io
 import sys
 
-GAME_PER_FILE = 1000 # 10 000 is too slow
+GAME_PER_FILE = 5000 # 10 000 is too slow
 
 # games are located in the dataset folder in the parent directory in the form of pgn files
 PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dataset\\')
@@ -121,7 +121,7 @@ def get_boards(pgn_files):
 
             if game.headers['Result'] == '1-0' or game.headers['Result'] == '0-1' or game.headers['Result'] == '1/2-1/2':
                 #  check if white player is rated
-                if 'WhiteElo' in game.headers and 'BlackElo' in game.headers and int(game.headers['WhiteElo']) > 1500 and int(game.headers['BlackElo']) > 1500:
+                if 'WhiteElo' in game.headers and 'BlackElo' in game.headers and int(game.headers['WhiteElo']) > 2000 and int(game.headers['BlackElo']) > 2000:
                     board = game.board()
                     i = 0
                     for move in game.mainline_moves():
@@ -144,14 +144,17 @@ def get_boards(pgn_files):
 
                 # save the first 100 boards to a file
                 np.save(PATH + str(file_counter*GAME_PER_FILE) + '.npy', temp_boards)
+                print("saved", file_counter*GAME_PER_FILE, "games")
                 file_counter += 1
             
     # # pop off the last <GAME_PER_FILE boards
     # temp_boards = [board.board_map for board in boards]
     # np.save(PATH + str(file_counter*GAME_PER_FILE) + '.npy', temp_boards)
     # return boards, data_counter
-            if file_counter * GAME_PER_FILE > 500000:
+            if file_counter * GAME_PER_FILE > 1000000:
                 return boards, file_counter * GAME_PER_FILE
+            
+    return boards, file_counter * GAME_PER_FILE
 
 if __name__ == '__main__':
     boards, dat = get_boards(get_pgn_files(PATH))
