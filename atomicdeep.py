@@ -17,6 +17,7 @@ import torch.nn.functional as F
 import os
 import logging
 import multiprocessing
+import torchsummary
 
 
 
@@ -103,8 +104,8 @@ def plot_training_curve(path):
     plt.ylabel("Error")
     plt.legend(loc='best')
     plt.savefig("model_error.png".format(path))
-
-    plt.show()
+    plt.clf()
+    
     # save the plot
     plt.title("Train vs Validation Loss")
     plt.plot(range(1,n+1), train_loss, label="Train")
@@ -113,8 +114,7 @@ def plot_training_curve(path):
     plt.ylabel("Loss")
     plt.legend(loc='best')
     plt.savefig("model_loss.png".format(path))
-
-    plt.show()
+    plt.clf()
     # save the plot
 
     plt.title("Train vs Validation Accuracy")
@@ -124,31 +124,32 @@ def plot_training_curve(path):
     plt.ylabel("Accuracy")
     plt.legend(loc='best')
     plt.savefig("model_acc.png".format(path))
-
-    plt.show()
+    plt.clf()
     # save the plot
 
     
-def eval(model, dataloader, criterion):
+def eval(model, dataloader, criterion, estimate_size):
     model.eval()
     total_loss = 0
     total_error = 0
     correct = 0
     total = 0
+    # use estimate_size * number of data points for evaluation
     with torch.no_grad():
         for data, target in dataloader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            loss = criterion(output, target)
-            total_loss += loss.item() * data.size(0)
-            error = torch.abs(output - target).sum()
-            total_error += error.item()
-            predicted = torch.sign(output)
-            correct += (predicted == target).sum().item()
-            total += target.size(0)
-    n_samples = len(dataloader.dataset)
-    avg_loss = total_loss / n_samples
-    avg_error = total_error / n_samples
+            if estimate_size > np.random.rand():
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                loss = criterion(output, target)
+                total_loss += loss.item() * data.size(0)
+                error = torch.abs(output - target).sum()
+                total_error += error.item()
+                predicted = torch.sign(output)
+                correct += (predicted == target).sum().item()
+                total += target.size(0)
+    n_samples = len(dataloader.dataset) * estimate_size
+    avg_loss = total_loss / total
+    avg_error = total_error / total
     avg_accuracy = correct / total
     model.train()
     return avg_loss, avg_error, avg_accuracy
@@ -167,8 +168,10 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     train_loader, val_loader, test_loader = get_data_loader(batch_size)
     logging.info("Done loading data")
     ########################################################################
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    criterion = nn.BCELoss()
     # optimizer = SGD(net.parameters(), lr=learning_rate, momentum=0.9)
+    # optimizer = Adam(net.parameters(), lr = learning_rate)
     optimizer = Adam(net.parameters(), lr = learning_rate)
     ########################################################################
     # Set up some numpy arrays to store the training/test loss/erruracy
@@ -182,8 +185,10 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
 
     epoch = 0
     print('neural net device', next(net.parameters()).device)
-    train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion)
-    val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion)
+    estimate_size = 0.1
+    # train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion, estimate_size)
+    val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion, estimate_size)
+    train_err[epoch], train_loss[epoch], train_acc[epoch] = val_err[epoch], val_loss[epoch], val_acc[epoch]
     
     print('neural net device', next(net.parameters()).device)
     logging.info(("Before training, Epoch {}: Train err: {}, Train loss: {}, Train acc: {} \n"+
@@ -220,11 +225,16 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
             # Forward pass, backward pass, and optimize
             outputs = net(inputs)
             loss = criterion(outputs, labels.float())
+            total_train_loss += loss.item() * inputs.size(0)
+            total_epoch += inputs.size(0)
+            error = torch.abs(outputs - labels).sum()
+            total_train_err += error.item()
             loss.backward()
             optimizer.step()    
        
-        train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion)
-        val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion)
+        train_err[epoch], train_loss[epoch], train_acc[epoch] = total_train_err / total_epoch, total_train_loss / total_epoch, 1 - total_train_err / total_epoch
+        # train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion, estimate_size)
+        val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion, estimate_size)
         logging.info(("Epoch {}: Train err: {}, Train loss: {}, Train acc: {} \n"+
                "Validation err: {}, Valid loss: {}, Validation acc: {}").format(
                    epoch + 1,
@@ -275,12 +285,48 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
 #         # removed tanh because it was saturating, so the model could not learn
 #         return x
 
+# import torch.nn.functional as F
+# class ChessNet2(nn.Module):
+#     def __init__(self):
+#         super(ChessNet2, self).__init__()
+#         self.name = "ChessNet2"
+#         self.conv_layers = nn.Sequential(
+#             nn.Conv2d(in_channels=17, out_channels=32, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+#             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+#             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
+#             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
+#             nn.ReLU(),
+#             nn.MaxPool2d(kernel_size=2, stride=2, padding=1)
+#         )
+        
+#         self.fc_layers = nn.Sequential(
+#             nn.Linear(in_features=256 * 2 * 2, out_features=512),
+#             nn.ReLU(),
+#             nn.Linear(in_features=512, out_features=128),
+#             nn.ReLU(),
+#             nn.Linear(in_features=128, out_features=1)
+#         )
+        
+#     def forward(self, x):
+#         x = self.conv_layers(x)
+#         x = x.view(-1, 256 * 2 * 2)
+#         x = self.fc_layers(x)
+#         return x
+
 import torch.nn.functional as F
-class ChessNet2(nn.Module):
+class ChessNet3(nn.Module):
     def __init__(self):
-        super(ChessNet2, self).__init__()
-        self.name = "ChessNet2"
+        super(ChessNet3, self).__init__()
+        self.name = "ChessNet3"
         self.conv_layers = nn.Sequential(
+            nn.Conv2d(in_channels=17, out_channels=17, kernel_size=7, padding=3), # layer to capture long range patterns
+            nn.ReLU(),
             nn.Conv2d(in_channels=17, out_channels=32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
@@ -298,7 +344,6 @@ class ChessNet2(nn.Module):
         self.fc_layers = nn.Sequential(
             nn.Linear(in_features=256 * 2 * 2, out_features=512),
             nn.ReLU(),
-            nn.Dropout(p=0.5),
             nn.Linear(in_features=512, out_features=128),
             nn.ReLU(),
             nn.Linear(in_features=128, out_features=1)
@@ -308,6 +353,7 @@ class ChessNet2(nn.Module):
         x = self.conv_layers(x)
         x = x.view(-1, 256 * 2 * 2)
         x = self.fc_layers(x)
+        x = torch.sigmoid(x)
         return x
 
 
@@ -324,26 +370,42 @@ if __name__ == "__main__":
     ds.__getitem__(10000)[1]
     print('label_data: ', ds.__getitem__(10000)[1])
 
+
     # multiprocessing.freeze_support()
-    neuralnet = ChessNet2()
-    neuralnet.to(device)
+    # load model from file
+    # neuralnet = ChessNet2()
+    # neuralnet.load_state_dict(torch.load('model_ChessNet2_bs1000_lr0.001_epoch50'))
+    # neuralnet.to(device)
     ## good parameters: batch_size = 100, learning_rate = 0.01, num_epochs = 20
-    batch_size = 1000
-    learning_rate = 0.01
-    num_epochs = 25
+    batch_size = 10000
+    learning_rate = 0.001
+    num_epochs = 5
+
+    neuralnet = ChessNet3()
+    neuralnet.to(device)
 
 
     # print number of trainable parameters
-    pytorch_total_params = sum(p.numel() for p in neuralnet.parameters() if p.requires_grad)
-    print("Number of trainable parameters: {}".format(pytorch_total_params))
+    torchsummary.summary(neuralnet,(17,8,8))
 
-    train_net(neuralnet, num_epochs = num_epochs, batch_size = batch_size, learning_rate = learning_rate)
+    
+
+    # train_net(neuralnet, num_epochs = num_epochs, batch_size = batch_size, learning_rate = learning_rate)
 
     small_model_path = get_model_name(neuralnet.name, batch_size=batch_size, learning_rate=learning_rate, epoch=num_epochs)
     plot_training_curve(small_model_path)
 
     sample_in = (ds.__getitem__(0)[0]).unsqueeze(0).to(device)
+    # for i in range(17):
+        # print('sample_in: ', sample_in[0][i])
+    print('sample_in: ', sample_in[0][6])
+    sample_in[0][6][6][5] = 0.0
+    sample_in[0][6][6][6] = 1.0
+    print('sample_in: ', sample_in[0][6])
+
+    # sample_in = torch.zeros((17,8,8)).to(device)
+
     sample_out = neuralnet(sample_in)
-    print(sample_out, ds.__getitem__(0)[1])
+    print(sample_out)
 
     #!rm -rf /content/*
