@@ -28,10 +28,10 @@ Install PyTorch from: https://pytorch.org/get-started/locally/ (don't forget to 
 
 # Features
 
-# Heuristic function
+## Heuristic function
 Model can be trained using the atomicdeep.py file. It can also resume the training of an existing model by loading it (uncomment relevant sections of the code). To train optimally, install PyTorch with CUDA.
 
-# Engine
+## Engine
 Run ui.py inside the engine folder to play against the engine. The engine was adapted from https://github.com/healeycodes/andoma by replacing the evalution function with our neural network heuristic, and by adapting the endgame to take atomic chess wins into account.
 
 By default, the engine will play against the baseline. To play against the model, set human=False in ui.py
