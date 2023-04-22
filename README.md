@@ -40,5 +40,4 @@ To change the model used, modify the chessnet2.py file. The game can be visualiz
 
 
 # Report
-<object data="AtomicAI_report.pdf" type="application/pdf" width="100%"> 
-</object>
+<embed src="AtomicAI_report.pdf" type="application/pdf">
