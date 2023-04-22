@@ -379,7 +379,7 @@ if __name__ == "__main__":
     ## good parameters: batch_size = 100, learning_rate = 0.01, num_epochs = 20
     batch_size = 10000
     learning_rate = 0.001
-    num_epochs = 5
+    num_epochs = 30
 
     neuralnet = ChessNet3()
     neuralnet.to(device)
@@ -390,7 +390,7 @@ if __name__ == "__main__":
 
     
 
-    # train_net(neuralnet, num_epochs = num_epochs, batch_size = batch_size, learning_rate = learning_rate)
+    train_net(neuralnet, num_epochs = num_epochs, batch_size = batch_size, learning_rate = learning_rate)
 
     small_model_path = get_model_name(neuralnet.name, batch_size=batch_size, learning_rate=learning_rate, epoch=num_epochs)
     plot_training_curve(small_model_path)
