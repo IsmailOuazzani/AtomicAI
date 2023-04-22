@@ -1,8 +1,6 @@
-# Notes
-This project is still in the works.
-
-# Dataset
-Install ztsd to unzip the dataset: 
+# Instructions
+## Dataset
+Create a dataset folder in the main directory. Install ztsd to unzip the dataset: 
 
 https://github.com/facebook/zstd/releases
 
@@ -18,22 +16,7 @@ Install python-chess:
 pip install python-chess
 ```
 
-The data can be read using utils/data_processing.py
-
-# Neural net
-See atomicdeep.py. Note that you need to install PyTorch with CUDA to run it optimally.
-
-We are using the evaluation function on atomicdeep.py to evaluate the board from the current player's perspective.
-
-The model is currently able to overfit on a small part of the dataset dataset (1 000 000 boards).
-
-Latest test: ran on 1 000 000 boards from games where both players had elo greater than 1500, with 5000 games per file, batch size 1000, learning rate 0.01 and on 20 epochs. It took about 1h40mins to run the entire atomicdeep.py code.
-
-| ![err](model_error.png) | ![loss](model_loss.png) | ![acc](model_acc.png) |
-|-----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-<div id="b" align="center">
-<h5>Metrics of latest test</h5>
-</div>
+The data can be read and processed using utils/data_processing.py
 
 ## Installation
 
@@ -43,14 +26,14 @@ Download CUDNN for CUDA 11.7, extract it somewhere and add the bin folder to env
 
 Install PyTorch from: https://pytorch.org/get-started/locally/ (don't forget to select the right options)
 
-## Ideas:
-- Use 3D convolutions to capture the relationships between pieces
-- Experiment with both 3x3 and 7x7 convolutions in the first layer to capture piece surroundings and long range relationships
-- Use PyTorch's profiling option to see how the resources are used
+# Features
 
-# To-do
-Export neural net to ONNX and integrate it to fairy stockfish (which supports Atomic Chess).
+# Heuristic function
+Model can be trained using the atomicdeep.py file. It can also resume the training of an existing model by loading it (uncomment relevant sections of the code). To train optimally, install PyTorch with CUDA.
 
+# Engine
+Run ui.py inside the engine folder to play against the engine. The engine was adapted from https://github.com/healeycodes/andoma by replacing the evalution function with our neural network heuristic, and by adapting the endgame to take atomic chess wins into account.
 
-https://github.com/fairy-stockfish/Fairy-Stockfish/wiki/Understanding-the-code. Here, need to modify this file:
-https://github.com/fairy-stockfish/Fairy-Stockfish/blob/master/src/evaluate.cpp at line 1558.
+By default, the engine will play against the baseline. To play against the model, set human=False in ui.py
+
+To change the model used, modify the chessnet2.py file. The game can be visualized through the board.svg file that the engine generates in the engine folder after every turn.
