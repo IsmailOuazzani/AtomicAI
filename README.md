@@ -37,3 +37,8 @@ Run ui.py inside the engine folder to play against the engine. The engine was ad
 By default, the engine will play against the baseline. To play against the model, set human=False in ui.py
 
 To change the model used, modify the chessnet2.py file. The game can be visualized through the board.svg file that the engine generates in the engine folder after every turn.
+
+
+# Report
+<object data="AtomicAI_report.pdf" type="application/pdf" width="100%"> 
+</object>
