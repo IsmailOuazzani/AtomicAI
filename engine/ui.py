@@ -23,7 +23,7 @@ def start():
     print("Starting position evaluation:", evaluate_board(board))
     
     # if play against a human
-    human = False
+    human = True
     if not human:
         from movegeneration import next_move as get_move
     else:
@@ -69,10 +69,10 @@ def start():
         print(f"info {move} White eval {eval}") #AI eval
         # opposite player's turn
         if not board.is_game_over():
-            # move = get_move(get_depth(),board)
-            move, eval = next_move_chessnet2(get_depth(), board, debug=False)
+            move = get_move(get_depth(),board)
+            # move, eval = next_move_chessnet2(get_depth(), board, debug=False)
             board.push(move)
-            # render_board(board, move, user_side)
+            render_board(board, move, user_side)
 
         
 

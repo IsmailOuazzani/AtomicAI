@@ -107,9 +107,9 @@ class Board():
 
 ################# Load desired model here #################
 model_path = 'models/'
-# NN = 'model_ChessNet2_bs1000_lr0.001_epoch49'
+NN = 'model_ChessNet2_bs1000_lr0.001_epoch49'
 # NN = 'model_ChessNet2_bs10000_lr0.001_epoch30'
-NN = 'model_ChessNet2_bs10000_lr0.001_epoch99'
+# NN = 'model_ChessNet2_bs10000_lr0.001_epoch99'
 NN = model_path + NN
 # load the model
 model = ChessNet2()
@@ -127,6 +127,7 @@ def evaluate_board(board: chess.Board) -> float:
         (-) for black
     The magnitude, how big of an advantage that player has
     """
+
     total = 0
     end_game = check_end_game(board)
 
@@ -177,7 +178,10 @@ def get_ordered_moves(board: chess.Board) -> List[chess.Move]:
     end_game = check_end_game(board)
 
     def orderer(move):
-        return move_value(board, move, end_game)
+        board.push(move)
+        value = evaluate_board(board)
+        board.pop()
+        return value
 
     in_order = sorted(
         board.legal_moves, key=orderer, reverse=(board.turn == chess.WHITE)
