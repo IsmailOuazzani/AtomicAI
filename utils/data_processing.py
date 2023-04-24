@@ -1,7 +1,6 @@
 # Take in a pgn file
 # Output the binary map of each board after each move in the game
 
-# TODO: test castling and en passant in board representation
 # TODO: decaying result label + elo trust
 
 import chess
@@ -10,6 +9,7 @@ import numpy as np
 import os
 import io
 import sys
+import random
 
 GAME_PER_FILE = 5000 # 10 000 is too slow
 
@@ -97,8 +97,6 @@ def get_boards(pgn_files):
         lines = pgn_clean.split('\n\n')
         for i in range(len(lines)//2):
             games.append(lines[2*i] + '\n\n' + lines[2*i+1] + '\n\n')
-            if i % GAME_PER_FILE == 0:
-                print("formatting game", i)
 
         print("finished formatting games for file", pgn.name)
             
@@ -108,6 +106,7 @@ def get_boards(pgn_files):
             counter += 1
             if counter % 1000 == 0:
                 print("processing game", counter)
+                print("data_counter", data_counter)
 
             # error_buffer = io.StringIO()
             # sys.stderr = error_buffer
@@ -121,22 +120,29 @@ def get_boards(pgn_files):
             # game.headers have all sorts of information.
             if game.headers['Result'] == '1-0' or game.headers['Result'] == '0-1' or game.headers['Result'] == '1/2-1/2':
                 #  check if white player is rated
-                if 'WhiteElo' in game.headers and 'BlackElo' in game.headers and int(game.headers['WhiteElo']) > 2000 and int(game.headers['BlackElo']) > 2000:
+                # check that mainline_moves() is not empty
+
+                # select N random moves from the game
+                N = 3
+
+                if 'WhiteElo' in game.headers and 'BlackElo' in game.headers and int(game.headers['WhiteElo']) > 1000 and int(game.headers['BlackElo']) > 1000 and len(list(game.mainline_moves())) > 2:
                     board = game.board()
                     i = 0
+                    # sample moves
+                    mv = random.sample(list(game.mainline_moves()), N)
+                    for i in range(N):
+                        mv[i] = mv[i].uci()
+
                     for move in game.mainline_moves():
                         if not board.is_legal(move):
                             print(game.headers['Site'], move, board.is_legal(move), board.is_game_over())
                             exit()
                         
                         board.push(move)
-                        boards.append(Board(board, game.headers['Result']))
-                        data_counter += 1
-                        # # save image of board, extremely slow!!
-                        # svg = chess.svg.board(board=boards[-1].board)
-                        # with open('utils/trash/'+'board' + str(i) + '.svg', 'w+') as f:
-                        #     f.write(svg)
-                        # i += 1
+                        if move.uci() in mv:
+                            boards.append(Board(board, game.headers['Result']))
+                            data_counter += 1
+
             while(len(boards) > GAME_PER_FILE):
                 # pop off the first 100 boards
                 temp_boards = [board.board_map for board in boards[:GAME_PER_FILE]]
@@ -148,7 +154,7 @@ def get_boards(pgn_files):
                 file_counter += 1
             
 
-            if file_counter * GAME_PER_FILE > 1000000:
+            if file_counter * GAME_PER_FILE > 3000000:
                 return boards, file_counter * GAME_PER_FILE
             
     return boards, file_counter * GAME_PER_FILE
