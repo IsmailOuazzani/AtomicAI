@@ -15,7 +15,7 @@ import torchsummary
 
 # Modify when changing dataset
 GAME_PER_FILE = 5000
-DATAPOINTS = 1000000
+DATAPOINTS = 3000000
 
 
 class ChessDataset(Dataset):
@@ -31,6 +31,8 @@ class ChessDataset(Dataset):
         data = np.load(filename, mmap_mode="r")
         data_select = data[idx%GAME_PER_FILE, :, :, :]
         label = torch.tensor([(data_select[17,0,0])])
+        # replace -1.0 with 0.0 in label, elementwise
+        label = torch.where(label == -1.0, torch.zeros_like(label), label)
         return torch.from_numpy(np.copy(data_select[:17,:,:])).float(), label.float()
 
 
@@ -137,8 +139,8 @@ def eval(model, dataloader, criterion, estimate_size):
                 total_loss += loss.item() * data.size(0)
                 error = torch.abs(output - target).sum()
                 total_error += error.item()
-                predicted = torch.sign(output)
-                correct += (predicted == target).sum().item()
+                # correct if predicted greater than 0.5 and target is 1 or predicted less than 0.5 and target is 0
+                correct += ((output > 0.5) == (target > 0.5)).sum().item()
                 total += target.size(0)
     n_samples = len(dataloader.dataset) * estimate_size
     avg_loss = total_loss / total
@@ -178,7 +180,7 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
 
     epoch = 0
     print('neural net device', next(net.parameters()).device)
-    estimate_size = 0.1
+    estimate_size = 1.1
     # train_err[epoch], train_loss[epoch], train_acc[epoch] = eval(net, train_loader, criterion, estimate_size)
     val_err[epoch], val_loss[epoch],val_acc[epoch] = eval(net, val_loader, criterion, estimate_size)
     train_err[epoch], train_loss[epoch], train_acc[epoch] = val_err[epoch], val_loss[epoch], val_acc[epoch]

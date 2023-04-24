@@ -107,9 +107,10 @@ class Board():
 
 ################# Load desired model here #################
 model_path = 'models/'
-NN = 'model_ChessNet2_bs1000_lr0.001_epoch49'
+# NN = 'model_ChessNet2_bs1000_lr0.001_epoch49'
 # NN = 'model_ChessNet2_bs10000_lr0.001_epoch30'
 # NN = 'model_ChessNet2_bs10000_lr0.001_epoch99'
+NN = 'model_ChessNet2_bs10000_lr0.001_epoch8'
 NN = model_path + NN
 # load the model
 model = ChessNet2()
@@ -143,7 +144,7 @@ def evaluate_board(board: chess.Board) -> float:
         # transform to float
         total = total.item()
 
-    total = total if board.turn == chess.WHITE else -total
+    total = -total if board.turn == chess.WHITE else total
 
     return total
 

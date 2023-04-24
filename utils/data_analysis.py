@@ -41,7 +41,7 @@ class Board():
         elif result == '1/2-1/2':
             self.result = 0
         else:
-            self.result = -1
+            self.result = 0
 
         # flip board to always see current player's perspective
         if board.turn == chess.BLACK: # since we don't care about game history, mirror the board
