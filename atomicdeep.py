@@ -253,7 +253,6 @@ def train_net(net, batch_size=64, learning_rate=0.01, num_epochs=30):
     np.savetxt("{}_val_err.csv".format(model_path), val_err)
     np.savetxt("{}_val_loss.csv".format(model_path), val_loss)
 
-
 import torch.nn.functional as F
 class ChessNet2(nn.Module):
     def __init__(self):
@@ -286,8 +285,8 @@ class ChessNet2(nn.Module):
         x = self.conv_layers(x)
         x = x.view(-1, 256 * 2 * 2)
         x = self.fc_layers(x)
+        x = torch.sigmoid(x)
         return x
-
 
 
 
