@@ -20,12 +20,19 @@ def start():
     print(board.uci_variant)
 
     # print evaluation of starting position
-    print("Starting position evaluation:", evaluate_board(board))
+    print("Starting position evaluation:", evaluate_board(board, board.turn))
     
     # if play against a human
-    human = True
+    human = False
+    # if play against baseline
+    baseline = False
     if not human:
-        from movegeneration import next_move as get_move
+        if baseline:
+            from movegeneration import next_move as get_move
+        else: # play against chessnet2
+            def get_move(depth, board: chess.Board) -> chess.Move:
+                move, eval = next_move_chessnet2(depth, board, debug=False)
+                return move
     else:
         def get_move(depth, board: chess.Board) -> chess.Move:
             move = input(f"\nYour move (e.g. {list(board.legal_moves)[0]}):\n")
@@ -33,7 +40,7 @@ def start():
             for legal_move in board.legal_moves:
                 if move == str(legal_move):
                     return legal_move
-            return get_move(board)
+            return get_move(depth, board)
 
     user_side = (
         chess.WHITE if input("Start as [w]hite or [b]lack:\n") == "w" else chess.BLACK
@@ -58,6 +65,7 @@ def start():
         board.push(move)
         render_board(board, move, user_side)
     else:
+        player = 'Baseline' if not human else 'Human'
         print("AI as white, vs","human" if human else "Baseline"," as black")
 
     while not board.is_game_over():
@@ -72,7 +80,7 @@ def start():
             move = get_move(get_depth(),board)
             # move, eval = next_move_chessnet2(get_depth(), board, debug=False)
             board.push(move)
-            render_board(board, move, user_side)
+            
 
         
 
@@ -137,7 +145,7 @@ def render(board: chess.Board) -> str:
 
 
 def get_depth() -> int:
-    return 3
+    return 2
 
 
 if __name__ == "__main__":

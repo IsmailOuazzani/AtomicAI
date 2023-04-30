@@ -120,7 +120,7 @@ model.eval()
 print('Model loaded in {} seconds'.format(time.time() - load_start))
    
 
-def evaluate_board(board: chess.Board) -> float:
+def evaluate_board(board: chess.Board, maximize: bool) -> float:
     """
     Evaluates the full board and determines which player is in a most favorable position.
     The sign indicates the side:
@@ -144,7 +144,8 @@ def evaluate_board(board: chess.Board) -> float:
         # transform to float
         total = total.item()
 
-    total = -total if board.turn == chess.WHITE else total
+    # total = total if board.turn == chess.WHITE else -total # this means AI plays as black
+    total = total if board.turn == maximize else -total # this means AI plays as white
 
     return total
 
@@ -161,7 +162,7 @@ def next_move_chessnet2(depth: int, board: chess.Board, debug=True) -> chess.Mov
     best_board = board.copy(stack=False)
     best_board.push(move)
     eval_time = time.time()
-    eval = evaluate_board(best_board)
+    eval = evaluate_board(best_board, board.turn)
     print(f"Eval time: {time.time() - eval_time} seconds")
 
     debug_info["time"] = time.time() - t0
@@ -170,7 +171,7 @@ def next_move_chessnet2(depth: int, board: chess.Board, debug=True) -> chess.Mov
     return move, eval
 
 
-def get_ordered_moves(board: chess.Board) -> List[chess.Move]:
+def get_ordered_moves(board: chess.Board, maximize: bool) -> List[chess.Move]:
     """
     Get legal moves.
     Attempt to sort moves by best to worst.
@@ -180,7 +181,7 @@ def get_ordered_moves(board: chess.Board) -> List[chess.Move]:
 
     def orderer(move):
         board.push(move)
-        value = evaluate_board(board)
+        value = evaluate_board(board, maximize)
         board.pop()
         return value
 
@@ -201,7 +202,7 @@ def minimax_root(depth: int, board: chess.Board) -> chess.Move:
     if not maximize:
         best_move = float("inf")
 
-    moves = get_ordered_moves(board)
+    moves = get_ordered_moves(board, maximize)
     best_move_found = moves[0]
 
     for move in moves:
@@ -246,11 +247,11 @@ def minimax(
         return  -MATE_SCORE if is_maximising_player else MATE_SCORE
 
     if depth == 0:
-        return evaluate_board(board)
+        return evaluate_board(board, is_maximising_player)
 
     if is_maximising_player:
         best_move = -float("inf")
-        moves = get_ordered_moves(board)
+        moves = get_ordered_moves(board, is_maximising_player)
         for move in moves:
             board.push(move)
             curr_move = minimax(depth - 1, board, alpha, beta, not is_maximising_player)
@@ -271,7 +272,7 @@ def minimax(
         return best_move
     else:
         best_move = float("inf")
-        moves = get_ordered_moves(board)
+        moves = get_ordered_moves(board, is_maximising_player)
         for move in moves:
             board.push(move)
             curr_move = minimax(depth - 1, board, alpha, beta, not is_maximising_player)
